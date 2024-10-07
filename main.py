@@ -44,6 +44,9 @@ from training import train_keras
 from classification import classify
 from segmentation import segmentation_keras_load
 
+
+import argparse
+
 # from plotdata import plot_scheduling
 # from scheduling import uav_scheduling
 
@@ -90,3 +93,16 @@ if __name__ == "__main__":
     #     plot_scheduling()
     else:
         print("Mode is not correct")
+
+def get_model_path():
+    # Create the parser
+    parser = argparse.ArgumentParser(description="Parser to accept arguments from command line")
+
+    # Add arguments
+    parser.add_argument("model_path", type=str, help="Model path")
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+
+    return args.arg1

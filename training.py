@@ -18,6 +18,7 @@ import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
+from tensorflow.keras import metrics
 
 
 from config import new_size
@@ -38,6 +39,7 @@ image_size = (new_size.get('width'), new_size.get('height'))
 batch_size = Config_classification.get('batch_size')
 save_model_flag = Config_classification.get('Save_Model')
 epochs = Config_classification.get('Epochs')
+model_path = Config_classification.get("model_path")
 
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
@@ -113,15 +115,21 @@ def train_keras():
     model = make_model_keras(input_shape=image_size + (3,), num_classes=2)
     keras.utils.plot_model(model, show_shapes=True)
 
-    callbacks = [keras.callbacks.ModelCheckpoint("save_at_{epoch}.h5"), ]
-    model.compile(optimizer=keras.optimizers.Adam(1e-3), loss="binary_crossentropy", metrics=["accuracy"], )
+    callbacks = [keras.callbacks.ModelCheckpoint(f"{model_path}/checkpoints/" + "save_at_{epoch}.h5"), ]
+    # callbacks = [keras.callbacks.ModelCheckpoint("save_at_{epoch}.h5"), ]
+    model.compile(
+        optimizer=keras.optimizers.Adam(1e-3), 
+        loss="binary_crossentropy", 
+        metrics=["accuracy"]
+    )
     res_fire = model.fit(train_ds, epochs=epochs, callbacks=callbacks, validation_data=val_ds, batch_size=batch_size)
 
     layers_len = len(model.layers)
 
     if save_model_flag:
-        file_model_fire = 'Output/Models/model_fire_resnet_weighted_40_no_metric_simple'
-        model.save(file_model_fire)
+        # file_model_fire = 'Output/Models/model_fire_resnet_weighted_40_no_metric_simple'
+        # model.save(file_model_fire)
+        model.save(model_path)
     if Config_classification.get('TrainingPlot'):
         plot_training(res_fire, 'KerasModel', layers_len)
 

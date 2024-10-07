@@ -12,6 +12,10 @@ import itertools
 import numpy as np
 from skimage.io import imshow
 import matplotlib.pyplot as plt
+import os
+
+from config import Config_classification
+model_path = Config_classification.get("model_path")
 
 
 #########################################################
@@ -36,15 +40,26 @@ def plot_training(result, type_model, layers_len):
     ax[1].set_title("Accuracy", fontsize=14, fontweight="bold")
     ax[1].set_xlabel("Epoch #", fontsize=14, fontweight="bold")
     ax[1].set_ylabel("Accuracy", fontsize=14, fontweight="bold")
-    ax[1].plot(np.arange(1, epochs+1), result.history['bin_accuracy'], label='Accuracy', linewidth=2.5, linestyle='-',
-               marker='o', markersize='10', color='red')
-    ax[1].plot(np.arange(1, epochs+1), result.history['val_bin_accuracy'], label='Validation_accuracy', linewidth=2.5,
-               linestyle='--', marker='x', markersize='10', color='blue')
+    # ax[1].plot(np.arange(1, epochs+1), result.history['bin_accuracy'], label='Accuracy', linewidth=2.5, linestyle='-',
+    #            marker='o', markersize='10', color='red')
+    ax[1].plot(np.arange(1, epochs+1), result.history['accuracy'], label='Accuracy', linewidth=2.5, linestyle='-',
+            marker='o', markersize='10', color='red')
+    # ax[1].plot(np.arange(1, epochs+1), result.history['val_bin_accuracy'], label='Validation_accuracy', linewidth=2.5,
+    #            linestyle='--', marker='x', markersize='10', color='blue')
+    ax[1].plot(np.arange(1, epochs+1), result.history['val_accuracy'], label='Validation_accuracy', linewidth=2.5,
+            linestyle='--', marker='x', markersize='10', color='blue')
     ax[1].grid(True)
     ax[1].legend(prop={'size': 14, 'weight': 'bold'}, loc='best')
     ax[1].tick_params(axis='both', which='major', labelsize=15)
-    file_figobj = 'Output/FigureObject/%s_%d_EPOCH_%d_layers_opt.fig.pickle' % (type_model, epochs, layers_len)
-    file_pdf = 'Output/Figures/%s_%d_EPOCH_%d_layers_opt.pdf' % (type_model, epochs, layers_len)
+
+    # file_figobj = 'Output/FigureObject/%s_%d_EPOCH_%d_layers_opt.fig.pickle' % (type_model, epochs, layers_len)
+    # file_pdf = 'Output/Figures/%s_%d_EPOCH_%d_layers_opt.pdf' % (type_model, epochs, layers_len)
+    file_figobj = f"{model_path}/FigureObject/%s_%d_EPOCH_%d_layers_opt.fig.pickle" % (type_model, epochs, layers_len)
+    file_pdf = f"{model_path}/figures/%s_%d_EPOCH_%d_layers_opt.pdf" % (type_model, epochs, layers_len)
+
+    # Create directories if they do not exist
+    os.makedirs(os.path.dirname(file_figobj), exist_ok=True)
+    os.makedirs(os.path.dirname(file_pdf), exist_ok=True)
 
     pickle.dump(fig, open(file_figobj, 'wb'))
     fig.savefig(file_pdf, bbox_inches='tight')
