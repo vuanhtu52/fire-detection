@@ -18,8 +18,8 @@ import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
-from tensorflow.keras import metrics
-
+from keras.callbacks import Callback
+from pathlib import Path
 
 from config import new_size
 from plotdata import plot_training
@@ -67,15 +67,20 @@ def train_keras():
     """
     # This model is implemented based on the guide in Keras (Xception network)
     # https://keras.io/examples/vision/image_classification_from_scratch/
+    
     print(" --------- Training --------- ")
+
+    # Create the model's directory if not exist
+    Path(model_path).mkdir(parents=True, exist_ok=True)
 
     dir_fire = 'frames/Training/Fire/'
     dir_no_fire = 'frames/Training/No_Fire/'
 
-    # 0 is Fire and 1 is NO_Fire
+    # Count images for each class: 0 is Fire and 1 is NO_Fire
     fire = len([name for name in os.listdir(dir_fire) if os.path.isfile(os.path.join(dir_fire, name))])
     no_fire = len([name for name in os.listdir(dir_no_fire) if os.path.isfile(os.path.join(dir_no_fire, name))])
     total = fire + no_fire
+
     weight_for_fire = (1 / fire) * total / 2.0
     weight_for_no_fire = (1 / no_fire) * total / 2.0
     # class_weight = {0: weight_for_fire, 1: weight_for_no_fire}
@@ -83,6 +88,7 @@ def train_keras():
     print("Weight for class fire : {:.2f}".format(weight_for_fire))
     print("Weight for class No_fire : {:.2f}".format(weight_for_no_fire))
 
+    # Prepare datasets
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
         "frames/Training", validation_split=0.2, subset="training", seed=1337, image_size=image_size,
         batch_size=batch_size, shuffle=True
@@ -112,10 +118,15 @@ def train_keras():
     train_ds = train_ds.prefetch(buffer_size=32)
     val_ds = val_ds.prefetch(buffer_size=32)
 
+    # Define model
     model = make_model_keras(input_shape=image_size + (3,), num_classes=2)
     keras.utils.plot_model(model, show_shapes=True)
 
-    callbacks = [keras.callbacks.ModelCheckpoint(f"{model_path}/checkpoints/" + "save_at_{epoch}.h5"), ]
+    # Add the custom logger callback
+    custom_logger = CustomEpochLogger(model_path)
+
+    # Model training
+    callbacks = [keras.callbacks.ModelCheckpoint(f"{model_path}/checkpoints/" + "save_at_{epoch}.h5"), custom_logger]
     # callbacks = [keras.callbacks.ModelCheckpoint("save_at_{epoch}.h5"), ]
     model.compile(
         optimizer=keras.optimizers.Adam(1e-3), 
@@ -193,3 +204,21 @@ def make_model_keras(input_shape, num_classes):
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(units, activation=activation)(x)
     return keras.Model(inputs, outputs, name="model_fire")
+
+# Custom callback to log training information after every epoch
+class CustomEpochLogger(Callback):
+    def __init__(self, model_path):
+        super(CustomEpochLogger, self).__init__()
+        self.log_file = f"{model_path}/logs.txt"
+
+    def on_epoch_end(self, epoch, logs=None):
+        """Logs the epoch number and associated metrics to a file after each epoch"""
+        logs = logs or {}
+        with open(self.log_file, "a") as f:
+            log_message = f"Epoch {epoch + 1}:\n"
+            for key, value in logs.items():
+                log_message += f"  {key}: {value:.4f}\n"
+            log_message += "\n"
+            f.write(log_message)
+        print(f"Epoch {epoch + 1} logs written to {self.log_file}")
+
