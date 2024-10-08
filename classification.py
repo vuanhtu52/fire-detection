@@ -23,7 +23,7 @@ batch_size = Config_classification.get('batch_size')
 image_size = (new_size.get('width'), new_size.get('height'))
 epochs = Config_classification.get('Epochs')
 
-MODEL_PATH = "models/binary_classification/checkpoints/save_at_1.h5"
+# MODEL_PATH = "models/xception_v4/checkpoints/save_at_40.h5"
 
 
 #########################################################
@@ -40,15 +40,15 @@ def classify():
     )
 
     # model_fire = load_model('Output/Models/model_fire_resnet_not_weighted_40_no_metric_simple')
-    model_fire = load_model(MODEL_PATH)
+    # model_fire = load_model(MODEL_PATH)
 
     # _ = model_fire.evaluate(test_ds, batch_size=batch_size)
 
     # best_model_fire = load_model('Output/Models/h5model/keras/save_at_25.h5')
-    best_model_fire = load_model(MODEL_PATH)
+    best_model_fire = load_model(get_best_checkpoint(Config_classification.get("model_path")))
     results_eval = best_model_fire.evaluate(test_ds, batch_size=batch_size)
 
-    for name, value in zip(model_fire.metrics_names, results_eval):
+    for name, value in zip(best_model_fire.metrics_names, results_eval):
         print(name, ': ', value)
     print()
 
@@ -73,3 +73,24 @@ def classify():
     # fn = no_fire_eval[1] * true_no_fire
     # cm = np.array([[tp, fn], [fp, tn]], dtype=int)
     # plot_confusion_matrix(cm=cm, classes=cm_plot_labels, title='Confusion Matrix')
+
+def get_best_checkpoint(model_path):
+    with open(f"{model_path}/logs.txt") as f:
+        max_val_accuracy = 0
+        best_epoch = None
+
+        current_epoch = None
+        for line in f:
+            line = line.strip()
+            if line.startswith("Epoch"):
+                current_epoch = int(line.split(" ")[1][:-1])
+            if line.startswith("val_accuracy"):
+                current_val_accuracy = float(line.split(" ")[1])
+                if current_val_accuracy > max_val_accuracy:
+                    best_epoch = current_epoch
+                    max_val_accuracy = current_val_accuracy
+
+    print("Best epoch: ", best_epoch)
+    print("Max val_accuracy: ", max_val_accuracy)
+
+    return f"{model_path}/checkpoints/save_at_{best_epoch}.h5"

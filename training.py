@@ -75,18 +75,22 @@ def train_keras():
 
     dir_fire = 'frames/Training/Fire/'
     dir_no_fire = 'frames/Training/No_Fire/'
+    dir_smoke = 'frames/Training/Smoke/'
 
     # Count images for each class: 0 is Fire and 1 is NO_Fire
     fire = len([name for name in os.listdir(dir_fire) if os.path.isfile(os.path.join(dir_fire, name))])
     no_fire = len([name for name in os.listdir(dir_no_fire) if os.path.isfile(os.path.join(dir_no_fire, name))])
-    total = fire + no_fire
+    smoke = len([name for name in os.listdir(dir_smoke) if os.path.isfile(os.path.join(dir_smoke, name))])
+    total = fire + no_fire + smoke
 
-    weight_for_fire = (1 / fire) * total / 2.0
-    weight_for_no_fire = (1 / no_fire) * total / 2.0
+    weight_for_fire = (1 / fire) * total / 3.0
+    weight_for_no_fire = (1 / no_fire) * total / 3.0
+    weight_for_smoke = (1 / smoke) * total / 3.0
     # class_weight = {0: weight_for_fire, 1: weight_for_no_fire}
 
-    print("Weight for class fire : {:.2f}".format(weight_for_fire))
+    print("Weight for class Fire : {:.2f}".format(weight_for_fire))
     print("Weight for class No_fire : {:.2f}".format(weight_for_no_fire))
+    print("Weight for class Smoke : {:.2f}".format(weight_for_smoke))
 
     # Prepare datasets
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -115,11 +119,12 @@ def train_keras():
             plt.imshow(augmented_images[0].numpy().astype("uint8"))
             plt.axis("off")
 
+    # Prefetching for performance optimisation
     train_ds = train_ds.prefetch(buffer_size=32)
     val_ds = val_ds.prefetch(buffer_size=32)
 
     # Define model
-    model = make_model_keras(input_shape=image_size + (3,), num_classes=2)
+    model = make_model_keras(input_shape=image_size + (3,), num_classes=3)
     keras.utils.plot_model(model, show_shapes=True)
 
     # Add the custom logger callback
@@ -130,7 +135,7 @@ def train_keras():
     # callbacks = [keras.callbacks.ModelCheckpoint("save_at_{epoch}.h5"), ]
     model.compile(
         optimizer=keras.optimizers.Adam(1e-3), 
-        loss="binary_crossentropy", 
+        loss="sparse_categorical_crossentropy", 
         metrics=["accuracy"]
     )
     res_fire = model.fit(train_ds, epochs=epochs, callbacks=callbacks, validation_data=val_ds, batch_size=batch_size)
@@ -145,13 +150,13 @@ def train_keras():
         plot_training(res_fire, 'KerasModel', layers_len)
 
     # Prediction on one sample frame from the test set
-    img = keras.preprocessing.image.load_img(
-        "frames/Training/Fire/resized_frame1801.jpg", target_size=image_size)
-    img_array = keras.preprocessing.image.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)
-    predictions = model.predict(img_array)
-    score = predictions[0]
-    print("This image is %.2f percent Fire and %.2f percent No Fire." % (100 * (1 - score), 100 * score))
+    # img = keras.preprocessing.image.load_img(
+    #     "frames/Training/Fire/resized_frame1801.jpg", target_size=image_size)
+    # img_array = keras.preprocessing.image.img_to_array(img)
+    # img_array = tf.expand_dims(img_array, 0)
+    # predictions = model.predict(img_array)
+    # score = predictions[0]
+    # print("This image is %.2f percent Fire and %.2f percent No Fire." % (100 * (1 - score), 100 * score))
 
 
 def make_model_keras(input_shape, num_classes):
@@ -162,8 +167,8 @@ def make_model_keras(input_shape, num_classes):
     :return: The built model is returned
     """
     inputs = keras.Input(shape=input_shape)
-    # x = data_augmentation(inputs)  # 1) First option
-    x = inputs  # 2) Second option
+    x = data_augmentation(inputs)  # 1) First option
+    # x = inputs  # 2) Second option
 
     x = layers.experimental.preprocessing.Rescaling(1.0 / 255)(x)
     # x = layers.Conv2D(32, 3, strides=2, padding="same")(x)
