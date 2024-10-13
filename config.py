@@ -22,12 +22,22 @@ Flags = {'playVideoFlag': True, 'SaveRawFrameFlag': False, 'ResizeFlag': False, 
 new_size = {'width': 256, 'height': 256}
 segmentation_new_size = {'width': 512, 'height': 512}
 # Config_classification = {"batch_size": 32, 'Save_Model': True, 'Epochs': 40, "TrainingPlot": False}
-Config_classification = {"batch_size": 32, 'Save_Model': True, 'Epochs': 40, "TrainingPlot": True, "model_path": "models/xception_v1"}
 config_segmentation = {"batch_size": 16, 'Save_Model': False, 'Epochs': 30, "TrainingPlot": False,
                        "train_set_ratio": 0.85, "val_set_ratio": 0.15, "num_class": 2, "CHANNELS": 3}
-Mode = 'Classification'
 # Different Modes {"Fire", "Lake_Mary", "Test_Frame", "Training", "Classification", "Rename", "Segmentation",
 #                   "Scheduling"}
 
 config_uav = {"Num_uav": 2, "Init_flight_time": 40, 'Observation_time': 2, 'Observation_interval': 20,
               "Charge_time": 35, "Speed": 150, "Num_pile_fire": 5, "Event": 100, "uav_limit": 10}
+
+
+Mode = 'Training'
+Config_classification = {
+    "batch_size": 32, 
+    "learning_rate": 0.001,
+    'Save_Model': True, 
+    'Epochs': 50, 
+    "TrainingPlot": True, 
+    "architecture": "xception", 
+    "model_path": "models/xception/xception_v1"
+}
